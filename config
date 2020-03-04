@@ -1,0 +1,6 @@
+email:
+    user: username
+    pass: password
+to:
+    to1: email1@email.com
+    to2: email2@email.com
