@@ -1,1 +1,0 @@
-python "C:\Users\Darin\Desktop\coronavirus script\main.py"
