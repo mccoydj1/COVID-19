@@ -21,6 +21,9 @@ cvpath = git_dir + r'\csse_covid_19_data\csse_covid_19_time_series\time_series_1
 #Grab the latest stats
 data, uniq_countries_num, usdata, uscases, ildata, ilcases = cv_stats(cvpath, cfg['apikey'])
 
+ussummarydata = [row for row in data if row[-1] == 'usdata']
+ussummarydata = sorted(ussummarydata, key=itemgetter(-3), reverse=True)
+
 emergingdata = [row for row in data if row[-1] == 'emerging']
 emergingdata = sorted(emergingdata, key=itemgetter(-3), reverse=True)
 
@@ -40,7 +43,7 @@ password = cfg['email']['pass']
 
 #Who is the email going to send to?
 
-debug = True
+debug = False
 if debug:
     receiver_email = [cfg['to']['to1']]
 else:
@@ -61,6 +64,8 @@ message["To"] = ", ".join(receiver_email)
 html = "<html><body>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
        "Total # of US cases: %d ( %d cities) <br><br>" % (uscases, len(usdata))
 
+
+ussummarydata_txt = createtable('USA', ussummarydata)
 rapidspread = createtable('Rapid Spread', rapiddata)
 emerging = createtable('Emerging', emergingdata)
 slow = createtable('Slow', slowdata)
@@ -77,7 +82,7 @@ for city in usdata:
 uscities = uscities + "</table><br><br>"
 
 
-html = html + ilcities + rapidspread + slow + emerging + stable + uscities
+html = html + ilcities + ussummarydata_txt + rapidspread + slow + emerging + stable + uscities
 
 # Add HTML/plain-text parts to MIMEMultipart message
 # The email client will try to render the last part first

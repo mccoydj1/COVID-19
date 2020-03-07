@@ -3,6 +3,7 @@ import numpy as np
 from operator import itemgetter
 import requests, json
 import pytemperature
+import re
 
 
 def cv_stats(cvpath, apikey):
@@ -14,25 +15,29 @@ def cv_stats(cvpath, apikey):
     header = data[0]
     data = [fixdataquality(row) for row in data[1:]]
 
+    # Find all illinois cases
+    ildata = [[data[0], float(data[-1])] for data in data if data[0].find('IL') > 0]
+    ilcases = sum([row[1] for row in ildata])
+
+    # Find all US cases
+    usdata = [[data[0], float(data[-1])] for data in data if data[1] == 'US']
+    usdata = sorted(usdata, key=itemgetter(1), reverse=True)
+    uscases = sum([row[1] for row in usdata])
+
+    # Convert cities in US states to be their state
+    data = convert_cities_to_states(data)
+
     countries = [row[1] for row in data]
     countriesregion = [row[0:4] for row in data[1:-1]]
 
     for i in countriesregion:
         if i[0] == "":
             i[0] = i[1]
-        elif i[0].find(',')<0:
+        elif i[0].find(',') < 0:
             i[0] = i[0] + ', ' + i[1]
 
     uniq_countries = list(set(countries[1:-1]))
     uniq_countries_num = len(uniq_countries)
-
-
-    usdata = [[data[0], float(data[-1])] for data in data if data[1] == 'US']
-    ildata = [[data[0], float(data[-1])] for data in data if data[0].find('IL') > 0]
-    ilcases = sum([row[1] for row in ildata])
-
-    usdata = sorted(usdata, key=itemgetter(1), reverse=True)
-    uscases = sum([row[1] for row in usdata])
 
     lastfourdays = [row[-4:] for row in data]
 
@@ -43,14 +48,19 @@ def cv_stats(cvpath, apikey):
 
         countrydata_num = [float(i) for i in countrydata]
         suspect_country = countriesregion[ct][0]
+        country_full = countriesregion[ct][1]
 
         increase1, increase2, increase3, amt1, amt2, amt3, amt4, acc, increasetype = assess_increase(countrydata_num)
 
-        if len(increasetype)>0:
+        if len(increasetype) > 0:
 
             lat = countriesregion[ct][2]
             long = countriesregion[ct][3]
             temp = assess_weather(lat, long, apikey)
+            #temp = 40
+
+            if country_full.find('US') >= 0:
+                increasetype = 'usdata'
 
             finallist.append([suspect_country, increase1, increase2, increase3, amt1, amt2, amt3, amt4, acc, temp, increasetype])
 
@@ -90,6 +100,7 @@ def assess_increase(raw_countrydata_num):
 
         # Call it a large case if 2/3 have increases greater than 500
         largecase = sum([delta1 > 500, delta2 > 500, delta3 > 500]) >= 2
+        mediumcase = sum([delta1 > 100, delta2 > 100, delta3 > 100]) >= 2
         normalincrease_amt = sum([delta1 > 10, delta2 > 10, delta3 > 10]) >= 2
         rapidincrease_pct = sum([perc_increase1 > 30, perc_increase2 > 30, perc_increase3 > 30]) >= 2
         slowincrease_pct = sum([perc_increase1 > 5, perc_increase2 > 5, perc_increase3 > 5]) >= 2
@@ -110,7 +121,7 @@ def assess_increase(raw_countrydata_num):
             acc = temp_acc
             increasetype = 'rapid'
 
-        elif largecase or (slowincrease_pct and normalincrease_amt):
+        elif mediumcase or (slowincrease_pct and normalincrease_amt):
             increase1 = perc_increase1
             increase2 = perc_increase2
             increase3 = perc_increase3
@@ -202,7 +213,7 @@ def assess_weather(lat, long, api_key):
 
         # store the value corresponding
         # to the "temp" key of y
-        current_temperature = pytemperature.k2f(y["temp"])
+        current_temperature = pytemperature.k2f(y["temp_max"])
 
         # store the value corresponding
         # to the "pressure" key of y
@@ -222,3 +233,40 @@ def assess_weather(lat, long, api_key):
         weather_description = z[0]["description"]
 
         return current_temperature
+
+
+def convert_cities_to_states(data):
+
+    usdata = [data for data in data if data[1] == 'US']
+    nonusdata = [data for data in data if data[1] != 'US']
+
+    allstates = []
+
+    for us in usdata:
+        state = re.findall(r", (\w\w)", us[0])
+
+        if len(state) == 1:
+            mystate = state[0]
+        else:
+            mystate = 'Unknown'
+
+        us[0] = mystate
+        allstates.append(mystate)
+
+    uniq_states = list(set(allstates))
+
+    statelist = []
+
+    for uniq in uniq_states:
+        allstate_data_txt = [data[0:4] for data in data if data[0] == uniq]
+        allstate_data_num = [[float(x) for x in data[4:]] for data in data if data[0] == uniq]
+
+        newsum = np.sum(allstate_data_num, axis=0).tolist()
+        newsum_str = [str(x) for x in newsum]
+        newlist = allstate_data_txt[0][0:4] +  newsum_str
+
+        statelist.append(newlist)
+
+    new_revised = nonusdata + statelist
+
+    return new_revised
