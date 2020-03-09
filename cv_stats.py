@@ -50,7 +50,14 @@ def cv_stats(cvpath, apikey):
         suspect_country = countriesregion[ct][0]
         country_full = countriesregion[ct][1]
 
+#        if suspect_country.find('IL')>=0:
+#            print("test")
+
         increase1, increase2, increase3, amt1, amt2, amt3, amt4, acc, increasetype = assess_increase(countrydata_num)
+
+        # No matter what type of increase... if its in the US, count it
+        if country_full.find('US') >= 0 and acc > 0:
+            increasetype = 'usdata'
 
         if len(increasetype) > 0:
 
@@ -58,9 +65,6 @@ def cv_stats(cvpath, apikey):
             long = countriesregion[ct][3]
             temp = assess_weather(lat, long, apikey)
             #temp = 40
-
-            if country_full.find('US') >= 0:
-                increasetype = 'usdata'
 
             finallist.append([suspect_country, increase1, increase2, increase3, amt1, amt2, amt3, amt4, acc, temp, increasetype])
 
@@ -86,8 +90,8 @@ def assess_increase(raw_countrydata_num):
 
     np.diff(raw_countrydata_num)
 
-    # Assume the very first data point is greater than 0 and the last data point is greater than 10
-    if countrydata_num[0] > 0 and countrydata_num[2] > 10:
+    # Assume the very first data point is greater than 0 and the last data point is greater than or equal to 10
+    if countrydata_num[0] > 0 and countrydata_num[-1] > 5:
 
         delta1 = countrydata_num[-3] - countrydata_num[-4]
         delta2 = countrydata_num[-2] - countrydata_num[-3]
@@ -105,9 +109,13 @@ def assess_increase(raw_countrydata_num):
         rapidincrease_pct = sum([perc_increase1 > 30, perc_increase2 > 30, perc_increase3 > 30]) >= 2
         slowincrease_pct = sum([perc_increase1 > 5, perc_increase2 > 5, perc_increase3 > 5]) >= 2
 
-        temp_acc1 = delta2 - delta1
-        temp_acc2 = delta3 - delta2
-        temp_acc = max(temp_acc1, temp_acc2)
+        # Rare case, but if the first number is negative and the others are 0... this is not positive acceleration
+        if delta1 < 0 and delta2 == 0 and delta3 == 0:
+            temp_acc = 0
+        else:
+            temp_acc1 = delta2 - delta1
+            temp_acc2 = delta3 - delta2
+            temp_acc = max(temp_acc1, temp_acc2)
 
         # If you find a likely suspect
         if largecase or (rapidincrease_pct and normalincrease_amt):
