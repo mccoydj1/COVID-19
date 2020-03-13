@@ -8,6 +8,8 @@ import git
 import os
 import datetime
 
+debug = False
+
 with open("config.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
@@ -19,10 +21,13 @@ g.pull()
 cvpath = git_dir + r'\csse_covid_19_data\csse_covid_19_time_series\time_series_19-covid-Confirmed.csv'
 
 #Grab the latest stats
-data, uniq_countries_num, usdata, uscases, ildata, ilcases = cv_stats(cvpath, cfg['apikey'])
+data, uniq_countries_num, usdata, uscases, ildata, ilcases, statelist, midwestdate, azdata = cv_stats(cvpath, cfg['apikey'], debug)
 
 ussummarydata = [row for row in data if row[-1] == 'usdata']
 ussummarydata = sorted(ussummarydata, key=itemgetter(-3), reverse=True)
+
+us_statedate = [row for row in data if (row[-1] == 'usdata_small')]
+us_statedate = sorted(us_statedate, key=itemgetter(-3), reverse=True)
 
 emergingdata = [row for row in data if row[-1] == 'emerging']
 emergingdata = sorted(emergingdata, key=itemgetter(-3), reverse=True)
@@ -43,15 +48,15 @@ password = cfg['email']['pass']
 
 #Who is the email going to send to?
 
-debug = False
+
 if debug:
     receiver_email = [cfg['to']['to1']]
 else:
     # If today is a saturday
     if datetime.datetime.today().weekday() == 5:
-        receiver_email = [cfg['to']['to1'], cfg['to']['to2'], cfg['to']['to3']]
+        receiver_email = [cfg['to']['to1'], cfg['to']['to2'], cfg['to']['to3'], cfg['to']['to4'], cfg['to']['to5']]
     else:
-        receiver_email = [cfg['to']['to1'], cfg['to']['to2']]
+        receiver_email = [cfg['to']['to1'], cfg['to']['to2'], cfg['to']['to4'], cfg['to']['to5']]
 
 # Send the email
 message = MIMEMultipart("alternative")
@@ -60,12 +65,14 @@ message["From"] = sender_email
 message["To"] = ", ".join(receiver_email)
 
 # Create the plain-text and HTML version of your message
+# html = "<html><body>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
+#        "Total # of US cases: %d ( %d cities in %d states) <br><br>" % (uscases, len(usdata), len(statelist))
 
 html = "<html><body>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
-       "Total # of US cases: %d ( %d cities) <br><br>" % (uscases, len(usdata))
-
+       "Total # of US cases: %d (%d states incl diamond princess) <br><br>" % (uscases, len(statelist))
 
 ussummarydata_txt = createtable('USA', ussummarydata)
+ussummarydata_slow = createtable('USA (small)', us_statedate)
 rapidspread = createtable('Rapid Spread', rapiddata)
 emerging = createtable('Emerging', emergingdata)
 slow = createtable('Slow', slowdata)
@@ -76,13 +83,24 @@ for city in ildata:
     ilcities = ilcities + "<tr><td>%s</td><td>%d</td></tr>" %(city[0], city[1])
 ilcities = ilcities + "</table><br><br>"
 
+midwestcities = "<b>MO/IN/IA Cities</b><table><tr><th>City</th><th>Count</th></tr>"
+for city in midwestdate:
+    midwestcities = midwestcities + "<tr><td>%s</td><td>%d</td></tr>" %(city[0], city[1])
+midwestcities = midwestcities + "</table><br><br>"
+
+AZcities = "<b>AZ Cities</b><table><tr><th>City</th><th>Count</th></tr>"
+for city in azdata:
+    AZcities = AZcities + "<tr><td>%s</td><td>%d</td></tr>" %(city[0], city[1])
+AZcities = AZcities + "</table><br><br>"
+
 uscities = "<b>US Cities</b><table><tr><th>City</th><th>Count</th></tr>"
 for city in usdata:
     uscities = uscities + "<tr><td>%s</td><td>%d</td></tr>" %(city[0], city[1])
 uscities = uscities + "</table><br><br>"
 
-
-html = html + ilcities + ussummarydata_txt + rapidspread + slow + emerging + stable + uscities
+# John Hopkins stopped reporting on county so this part doesnt work anymore
+# html = html + ilcities + ussummarydata_txt + rapidspread + slow + emerging + stable + ussummarydata_slow + midwestcities + AZcities + uscities
+html = html + ussummarydata_txt + rapidspread + slow + emerging + stable + ussummarydata_slow
 
 # Add HTML/plain-text parts to MIMEMultipart message
 # The email client will try to render the last part first
