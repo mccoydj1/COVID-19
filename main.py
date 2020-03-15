@@ -7,6 +7,39 @@ import yaml
 import git
 import os
 import datetime
+import re
+import numpy as np
+
+from opensky_api import OpenSkyApi
+api = OpenSkyApi()
+s = api.get_states()
+
+flights_in_air = [x for x in s.states if x.on_ground == False]
+origin_countries = [flights_in_air.origin_country for flights_in_air in flights_in_air]
+
+[allcountries, ia] = np.unique(origin_countries,return_inverse=True)
+
+flighttracker = []
+for ix, country in enumerate(allcountries):
+    flightct = len(np.where(ix == ia)[0])
+    flighttracker.append([country, flightct])
+
+flighttracker = sorted(flighttracker, key=itemgetter(-1), reverse=True)
+
+flight_html = "<b>Flight Data (" + str(len(ia)) + " flights in " + str(len(allcountries)) + " countries)</b><table><tr><th>Country</th><th>Count</th></tr>"
+for flight in flighttracker:
+    flight_html = flight_html + "<tr><td>%s</td><td>%d</td></tr>" %(flight[0], flight[1])
+flight_html = flight_html + "</table><br><br>"
+
+# Read IL department public health info on COVID-19
+import urllib.request
+page = urllib.request.urlopen('http://www.dph.illinois.gov/topics-services/diseases-and-conditions/diseases-a-z-list/coronavirus')
+html_doc = page.read()
+m = re.findall('Positive \(Confirmed\)</h2>.n<h3>(\d+)</h3>',str(html_doc))
+IL_cases_new = m[0]
+m = re.findall('PUIs Pending</h2>.n<h3>(\d+)</h3>',str(html_doc))
+IL_cases_pending = m[0]
+
 
 debug = False
 
@@ -69,7 +102,9 @@ message["To"] = ", ".join(receiver_email)
 #        "Total # of US cases: %d ( %d cities in %d states) <br><br>" % (uscases, len(usdata), len(statelist))
 
 html = "<html><body>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
-       "Total # of US cases: %d (%d states incl diamond princess) <br><br>" % (uscases, len(statelist))
+       "Total # of US cases: %d (%d states incl diamond princess & DC)<br>" % (uscases, len(statelist))
+
+html = html + 'Current IL cases: %s (with %s patients under investigation)<br><br>' % (IL_cases_new, IL_cases_pending)
 
 ussummarydata_txt = createtable('USA', ussummarydata)
 ussummarydata_slow = createtable('USA (small)', us_statedate)
@@ -100,7 +135,7 @@ uscities = uscities + "</table><br><br>"
 
 # John Hopkins stopped reporting on county so this part doesnt work anymore
 # html = html + ilcities + ussummarydata_txt + rapidspread + slow + emerging + stable + ussummarydata_slow + midwestcities + AZcities + uscities
-html = html + ussummarydata_txt + rapidspread + slow + emerging + stable + ussummarydata_slow
+html = html + ussummarydata_txt + flight_html + rapidspread + slow + emerging + stable + ussummarydata_slow
 
 # Add HTML/plain-text parts to MIMEMultipart message
 # The email client will try to render the last part first

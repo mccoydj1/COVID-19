@@ -234,7 +234,10 @@ def fixdataquality(data):
 
 def fixdataquality_row(row):
     if row[-1] == '':
-        row[-1] = 0
+        if row[-2] == '':
+            row[-1] = '0'
+        else:
+           row[-1] = row[-2]
 
     return row
 
