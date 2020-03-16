@@ -10,6 +10,7 @@ import datetime
 import re
 import numpy as np
 
+
 from opensky_api import OpenSkyApi
 api = OpenSkyApi()
 s = api.get_states()
@@ -32,14 +33,13 @@ for flight in flighttracker:
 flight_html = flight_html + "</table><br><br>"
 
 # Read IL department public health info on COVID-19
-import urllib.request
-page = urllib.request.urlopen('http://www.dph.illinois.gov/topics-services/diseases-and-conditions/diseases-a-z-list/coronavirus')
-html_doc = page.read()
-m = re.findall('Positive \(Confirmed\)</h2>.n<h3>(\d+)</h3>',str(html_doc))
-IL_cases_new = m[0]
-m = re.findall('PUIs Pending</h2>.n<h3>(\d+)</h3>',str(html_doc))
-IL_cases_pending = m[0]
-
+# import urllib.request
+# page = urllib.request.urlopen('http://www.dph.illinois.gov/topics-services/diseases-and-conditions/diseases-a-z-list/coronavirus')
+# html_doc = page.read()
+# m = re.findall('Positive \(Confirmed\)</h2>.n<h3>(\d+)</h3>',str(html_doc))
+# IL_cases_new = m[0]
+# m = re.findall('PUIs Pending</h2>.n<h3>(\d+)</h3>',str(html_doc))
+# IL_cases_pending = m[0]
 
 debug = False
 
@@ -102,9 +102,9 @@ message["To"] = ", ".join(receiver_email)
 #        "Total # of US cases: %d ( %d cities in %d states) <br><br>" % (uscases, len(usdata), len(statelist))
 
 html = "<html><body>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
-       "Total # of US cases: %d (%d states incl diamond princess & DC)<br>" % (uscases, len(statelist))
+       "Total # of US cases: %d (%d states incl diamond princess & DC)<br><br>" % (uscases, len(statelist))
 
-html = html + 'Current IL cases: %s (with %s patients under investigation)<br><br>' % (IL_cases_new, IL_cases_pending)
+# html = html + 'Current IL cases: %s (with %s patients under investigation)<br><br>' % (IL_cases_new, IL_cases_pending)
 
 ussummarydata_txt = createtable('USA', ussummarydata)
 ussummarydata_slow = createtable('USA (small)', us_statedate)
