@@ -9,9 +9,19 @@ import os
 import datetime
 import re
 import numpy as np
-
-
 from opensky_api import OpenSkyApi
+from get_latest_pollution import get_latest_pollution
+
+userid = 's5pguest'
+password = 's5pguest'
+
+with open("config.yml", 'r') as ymlfile:
+    cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
+
+# Get pollution information
+no2_text = get_latest_pollution(userid, password)
+
+# Get flight information
 api = OpenSkyApi()
 s = api.get_states()
 
@@ -42,9 +52,6 @@ flight_html = flight_html + "</table><br><br>"
 # IL_cases_pending = m[0]
 
 debug = False
-
-with open("config.yml", 'r') as ymlfile:
-    cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 #Grab latest info from JH
 git_dir = os. getcwd() + r'\JH'
