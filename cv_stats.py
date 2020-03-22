@@ -152,7 +152,8 @@ def assess_increase(raw_countrydata_num):
     else:
         temp_acc1 = delta2 - delta1
         temp_acc2 = delta3 - delta2
-        temp_acc = max(temp_acc1, temp_acc2)
+
+        temp_acc = np.mean([temp_acc1, temp_acc2])
 
     # Dont classify anything unless this is true
     if countrydata_num[1] > 0 and countrydata_num[-1] > 10:

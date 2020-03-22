@@ -94,9 +94,9 @@ if debug:
 else:
     # If today is a saturday
     if datetime.datetime.today().weekday() == 5:
-        receiver_email = [cfg['to']['to1'], cfg['to']['to2'], cfg['to']['to3'], cfg['to']['to4'], cfg['to']['to5']]
+        receiver_email = [cfg['to']['to1'], cfg['to']['to2'], cfg['to']['to3'], cfg['to']['to4'], cfg['to']['to5'], cfg['to']['to6']]
     else:
-        receiver_email = [cfg['to']['to1'], cfg['to']['to2'], cfg['to']['to4'], cfg['to']['to5']]
+        receiver_email = [cfg['to']['to1'], cfg['to']['to2'], cfg['to']['to4'], cfg['to']['to5'], cfg['to']['to6']]
 
 # Send the email
 message = MIMEMultipart("alternative")
