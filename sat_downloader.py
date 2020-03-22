@@ -2,30 +2,27 @@ from sentinelsat import SentinelAPI
 from geopy.geocoders import Nominatim
 import os
 
-def sat_downloader(userid, password):
-
-    # Current directory
-    dir_path = os.path.dirname(os.path.realpath(__file__))
+def sat_downloader(userid, password, allcities_list):
 
     # Connect with the database
     apiurl = 'https://s5phub.copernicus.eu/dhus'
     testAPI = SentinelAPI(user=userid, password=password, api_url=apiurl)
 
-    # Grab all cities that are needed for the test
-    f = open(dir_path + r'\\cities_to_run.txt', 'r')
-    allcities_list = f.readlines()
-    f.close()
+    dir_path = os.path.dirname(os.path.realpath(__file__))
 
     # For all cities
-    for city in allcities_list:
+    for precity in allcities_list:
+
+        city = precity[0]
 
         # Determine the GPS location needed to search
         geolocator = Nominatim(user_agent="testApp")
         targetcity = geolocator.geocode(city)
 
         # Determine what files meet the criteria specified
-        timeframe = 'beginposition:[NOW-1DAYS TO NOW]'
+        #timeframe = 'beginposition:[NOW-1DAYS TO NOW]'
         #timeframe = 'beginposition:[2020-02-01T00:00:00.000Z TO 2020-02-02T00:00:00.000Z]'
+        timeframe = 'beginposition:[2020-01-05T00:00:00.000Z TO 2020-01-06T00:00:00.000Z]'
         satquery_loc = 'footprint:"intersects(' + str(targetcity.latitude) + ',' + str(targetcity.longitude) + ')"'
         products = testAPI.query(raw=satquery_loc + ' AND ' + timeframe + ' AND producttype:L2__NO2___')
 

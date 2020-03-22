@@ -8,13 +8,10 @@ import os
 import csv
 import glob
 
-def analyze_satellite_data():
+def analyze_satellite_data(allcities_list):
 
     # Grab all cities that are needed for the test
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    with open(dir_path + r'\\cities_to_run.txt', newline='\n') as f:
-        reader = csv.reader(f, delimiter='|')
-        allcities_list = list(reader)
 
     # Find all data files that need to be analyzed
     presatpath = dir_path + r'\datafiles'
@@ -88,13 +85,16 @@ def read_sat_data(satpath, allcities_list, num_dpts, resultspath, datestr):
             # Not exactly sure what the units are on this...
             total_no2 = 1000 * sum(no2array)
 
-            # Create the path to put the data
-            results_data = [mycity, datestr, str(total_no2), satpath]
+            # As long as its a number, record the value
+            if isinstance(total_no2, float):
 
-            # Output the results to a results file
-            with open(resultspath, 'a', newline='\n') as myfile:
-                wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-                wr.writerow(results_data)
+                # Create the path to put the data
+                results_data = [mycity, datestr, str(total_no2), satpath]
+
+                # Output the results to a results file
+                with open(resultspath, 'a', newline='\n') as myfile:
+                    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+                    wr.writerow(results_data)
 
 def num_merge(list1, list2):
     merged_list = tuple(zip(list1, list2))

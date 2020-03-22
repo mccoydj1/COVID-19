@@ -5,7 +5,6 @@ import requests, json
 import pytemperature
 import re
 
-
 def cv_stats(cvpath, apikey, debug):
 
     with open(cvpath, newline='\n') as f:
