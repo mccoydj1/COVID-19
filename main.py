@@ -11,19 +11,50 @@ import re
 import numpy as np
 from opensky_api import OpenSkyApi
 from get_latest_pollution import get_latest_pollution
+import urllib.request
+import json
 
-userid = 's5pguest'
-password = 's5pguest'
+# Grab yesterday's JSON file
+currentdate = (datetime.datetime.today() - datetime.timedelta(days = 1)).strftime('%Y%m%d')
+ildept_health_json = r'https://www.dph.illinois.gov/sites/default/files/COVID19/COVID19CountyResults' + currentdate + '.json'
+ilcountydata = json.load(urllib.request.urlopen(ildept_health_json))
+
+allilcounties = ilcountydata['characteristics_by_county']['values']
+
+tazewell = [mycounty for mycounty in allilcounties if mycounty['County'] == 'Tazewell']
+woodford = [mycounty for mycounty in allilcounties if mycounty['County'] == 'Woodford']
+peoria = [mycounty for mycounty in allilcounties if mycounty['County'] == 'Peoria']
+champaign = [mycounty for mycounty in allilcounties if mycounty['County'] == 'Champaign']
+
+
+debug = False
+
+
+# Peoria County info
+#page = urllib.request.urlopen('https://www.pcchd.org/289/COVID-19-Coronavirus')
+#html_doc = page.read()
+#m = re.findall('Confirmed.+>(\d+)<.+>(\d+)<.+>(\d+)<.+>(\d+)<.+Deaths', str(html_doc))
+#peoria_cases = 'Peoria:' + m[0][0] + '<br>Tazewell:' + m[0][1] + '<br>Woodford:' + m[0][2] + '<br>'
+peoria_cases = 'Peoria:' + str(peoria[0]['confirmed_cases']) + '<br>Tazewell:' +str(tazewell[0]['confirmed_cases']) + '<br>Woodford:' + str(woodford[0]['confirmed_cases'])
+
+# Read IL department public health info on COVID-19
+#page = urllib.request.urlopen('https://www.c-uphd.org/champaign-urbana-illinois-coronavirus-information.html')
+#html_doc = page.read()
+#m = re.findall('CHAMPAIGN.+COUNTY.+CONFIRMED.+CASES.+<span style="font-size:1.5em;">(\d+)<',str(html_doc))
+#champaign_cases = m[0]
+champaign_cases = 'Champaign:' + str(champaign[0]['confirmed_cases'])
+
+
+# Get flight information
+api = OpenSkyApi()
+s = api.get_states()
 
 with open("config.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 # Get pollution information
-no2_text = get_latest_pollution(userid, password)
-
-# Get flight information
-api = OpenSkyApi()
-s = api.get_states()
+no2_text = get_latest_pollution(cfg['sentinel_user'], cfg['sentinel_pswd'])
+#no2_text = ''
 
 flights_in_air = [x for x in s.states if x.on_ground == False]
 origin_countries = [flights_in_air.origin_country for flights_in_air in flights_in_air]
@@ -37,28 +68,17 @@ for ix, country in enumerate(allcountries):
 
 flighttracker = sorted(flighttracker, key=itemgetter(-1), reverse=True)
 
-flight_html = "<b>Flight Data (" + str(len(ia)) + " flights in " + str(len(allcountries)) + " countries)</b><table><tr><th>Country</th><th>Count</th></tr>"
+flight_html = "<b>Flight Data as of 5AM (" + str(len(ia)) + " flights in " + str(len(allcountries)) + " countries)</b><table><tr><th>Country</th><th>Count</th></tr>"
 for flight in flighttracker:
     flight_html = flight_html + "<tr><td>%s</td><td>%d</td></tr>" %(flight[0], flight[1])
 flight_html = flight_html + "</table><br><br>"
-
-# Read IL department public health info on COVID-19
-# import urllib.request
-# page = urllib.request.urlopen('http://www.dph.illinois.gov/topics-services/diseases-and-conditions/diseases-a-z-list/coronavirus')
-# html_doc = page.read()
-# m = re.findall('Positive \(Confirmed\)</h2>.n<h3>(\d+)</h3>',str(html_doc))
-# IL_cases_new = m[0]
-# m = re.findall('PUIs Pending</h2>.n<h3>(\d+)</h3>',str(html_doc))
-# IL_cases_pending = m[0]
-
-debug = False
 
 #Grab latest info from JH
 git_dir = os. getcwd() + r'\JH'
 g = git.cmd.Git(git_dir)
 g.pull()
 
-cvpath = git_dir + r'\csse_covid_19_data\csse_covid_19_time_series\time_series_19-covid-Confirmed.csv'
+cvpath = git_dir + r'\csse_covid_19_data\csse_covid_19_time_series\time_series_covid19_confirmed_global.csv'
 
 #Grab the latest stats
 data, uniq_countries_num, usdata, uscases, ildata, ilcases, statelist, midwestdate, azdata = cv_stats(cvpath, cfg['apikey'], debug)
@@ -108,7 +128,7 @@ message["To"] = ", ".join(receiver_email)
 # html = "<html><body>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
 #        "Total # of US cases: %d ( %d cities in %d states) <br><br>" % (uscases, len(usdata), len(statelist))
 
-html = "<html><body>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
+html = "<html><body>Champaign cases: " + champaign_cases + '<br>' + peoria_cases + "<br><br>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
        "Total # of US cases: %d (%d states incl diamond princess & DC)<br><br>" % (uscases, len(statelist))
 
 # html = html + 'Current IL cases: %s (with %s patients under investigation)<br><br>' % (IL_cases_new, IL_cases_pending)
@@ -142,7 +162,7 @@ uscities = uscities + "</table><br><br>"
 
 # John Hopkins stopped reporting on county so this part doesnt work anymore
 # html = html + ilcities + ussummarydata_txt + rapidspread + slow + emerging + stable + ussummarydata_slow + midwestcities + AZcities + uscities
-html = html + ussummarydata_txt + flight_html + rapidspread + slow + emerging + stable + ussummarydata_slow
+html = html + ussummarydata_txt + no2_text + flight_html + rapidspread + slow + emerging + stable + ussummarydata_slow
 
 # Add HTML/plain-text parts to MIMEMultipart message
 # The email client will try to render the last part first
