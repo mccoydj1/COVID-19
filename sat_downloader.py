@@ -31,19 +31,23 @@ def sat_downloader(userid, password, allcities_list):
             satquery_loc = 'footprint:"intersects(' + str(targetcity.latitude) + ',' + str(targetcity.longitude) + ')"'
             products = testAPI.query(raw=satquery_loc + ' AND ' + timeframe + ' AND producttype:L2__NO2___')
 
-            # Based on that, generate paths of available data
-            downloadedfile = products[next(iter(products))]['filename']
-            datafilesfolder = r'\\datafiles\\'
-            downloadedfile_full = dir_path + datafilesfolder + downloadedfile
-            firstdownload = dir_path + datafilesfolder.replace(r'datafiles\\', '') + downloadedfile.replace('.nc', '.zip')
-
-            # Check to see if you have already downloaded this file
-            if os.path.exists(downloadedfile_full):
-                #Exists!
-                print('File exists.. skipping')
+            if not products:
+                print('Dictionary empty')
             else:
-                # Otherwise, download all results from the search
-                mypath = testAPI.download_all(products)
 
-                # Move the file to where its supposed to go
-                os.rename(firstdownload, downloadedfile_full)
+                # Based on that, generate paths of available data
+                downloadedfile = products[next(iter(products))]['filename']
+                datafilesfolder = r'\\datafiles\\'
+                downloadedfile_full = dir_path + datafilesfolder + downloadedfile
+                firstdownload = dir_path + datafilesfolder.replace(r'datafiles\\', '') + downloadedfile.replace('.nc', '.zip')
+
+                # Check to see if you have already downloaded this file
+                if os.path.exists(downloadedfile_full):
+                    #Exists!
+                    print('File exists.. skipping')
+                else:
+                    # Otherwise, download all results from the search
+                    mypath = testAPI.download_all(products)
+
+                    # Move the file to where its supposed to go
+                    os.rename(firstdownload, downloadedfile_full)

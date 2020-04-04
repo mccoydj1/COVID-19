@@ -16,7 +16,8 @@ import json
 
 # Grab yesterday's JSON file
 currentdate = (datetime.datetime.today() - datetime.timedelta(days = 1)).strftime('%Y%m%d')
-ildept_health_json = r'https://www.dph.illinois.gov/sites/default/files/COVID19/COVID19CountyResults' + currentdate + '.json'
+#ildept_health_json = r'https://www.dph.illinois.gov/sites/default/files/COVID19/COVID19CountyResults' + currentdate + '.json'
+ildept_health_json = 'https://www.dph.illinois.gov/sitefiles/COVIDTestResults.json?nocache=1'
 ilcountydata = json.load(urllib.request.urlopen(ildept_health_json))
 
 allilcounties = ilcountydata['characteristics_by_county']['values']
@@ -128,7 +129,7 @@ message["To"] = ", ".join(receiver_email)
 # html = "<html><body>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
 #        "Total # of US cases: %d ( %d cities in %d states) <br><br>" % (uscases, len(usdata), len(statelist))
 
-html = "<html><body>Champaign cases: " + champaign_cases + '<br>' + peoria_cases + "<br><br>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
+html = "<html><body>" + champaign_cases + '<br>' + peoria_cases + "<br><br>Total countries with coronavirus: " + str(uniq_countries_num) + "<br>" + \
        "Total # of US cases: %d (%d states incl diamond princess & DC)<br><br>" % (uscases, len(statelist))
 
 # html = html + 'Current IL cases: %s (with %s patients under investigation)<br><br>' % (IL_cases_new, IL_cases_pending)
